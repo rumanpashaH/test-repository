@@ -1,10 +1,6 @@
 name: Hello World Workflow
 
 on:
-  push:
-    branches:
-      - main  # Triggers when pushing to the main branch
-
   workflow_dispatch:
     inputs:
       message:
