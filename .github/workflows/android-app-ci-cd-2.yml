@@ -1,0 +1,71 @@
+name: CI/CD Practice
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest coverage
+
+      - name: Run Unit Tests with Coverage
+        run: |
+          pytest --cov=myapp tests/
+          coverage xml
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  delivery:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t myapp:latest .
+
+      - name: Run Blue Deployment (Port 5000)
+        run: docker run -d --name myapp-blue -p 5000:5000 myapp:latest
+
+      - name: Simulate Green Deployment (Port 5001)
+        run: docker run -d --name myapp-green -p 5001:5000 myapp:latest
+
+      - name: Simulate Health Check Failure and Rollback
+        run: |
+          echo "❌ Simulating failure in green deployment"
+          docker stop myapp-green
+          docker rm myapp-green
+          echo "✅ Rolled back to blue deployment"
+
+      - name: List running containers (for validation)
+        run: docker ps
+
+      - name: Stop All Containers (Cleanup after practice)
+        if: always()
+        run: |
+          docker stop myapp-blue || true
+          docker rm myapp-blue || true
+          docker stop myapp-green || true
+          docker rm myapp-green || true

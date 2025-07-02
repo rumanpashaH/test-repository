@@ -1,9 +1,12 @@
 name: Hello World Workflow
 
 on:
-  push:
-    branches:
-      - test1  # Triggers when pushing to the test branch
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Message'
+        required: true
+        type: string
 
 jobs:
   say-hello:
@@ -14,4 +17,5 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Say Hello
-        run: echo "Hello, world!"
+
+        run: echo "Hello, world!" ${{ inputs.message }}

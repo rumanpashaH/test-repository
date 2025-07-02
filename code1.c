@@ -3,7 +3,7 @@
     {
         int number;
        
-        printf("Enter an integer: ");  
+        printf("Enter an integer between 1 to 10: ");  
         
        
         scanf("%d", &number);  
