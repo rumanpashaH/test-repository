@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+
+    environment {
+        // You can set your Java/Android SDK paths here if needed
+        ANDROID_HOME = "/opt/android-sdk"
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/android/sunflower.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo "Running Gradle build..."
+                sh './gradlew assembleDebug'  // Adjust variant if needed
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                echo "Running tests..."
+                sh './gradlew testDebugUnitTest'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Build and tests passed successfully!'
+        }
+        failure {
+            echo '❌ Build or tests failed!'
+        }
+    }
+}

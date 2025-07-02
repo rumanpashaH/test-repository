@@ -1,0 +1,69 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/your/repo.git', branch: 'main'
+            }
+        }
+
+        stage('Install & Test') {
+            steps {
+                sh '''
+                pip install -r requirements.txt
+                pip install pytest coverage
+                pytest --cov=myapp tests/
+                coverage xml
+                '''
+            }
+        }
+
+        stage('Archive Coverage') {
+            steps {
+                archiveArtifacts artifacts: 'coverage.xml', fingerprint: true
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t myapp:latest .'
+            }
+        }
+
+        stage('Run Blue Deployment') {
+            steps {
+                sh 'docker run -d --name myapp-blue -p 5000:5000 myapp:latest'
+            }
+        }
+
+        stage('Run Green Deployment') {
+            steps {
+                sh 'docker run -d --name myapp-green -p 5001:5000 myapp:latest'
+            }
+        }
+
+        stage('Simulate Failure and Rollback') {
+            steps {
+                sh '''
+                echo "Simulating failure in green deployment"
+                docker stop myapp-green || true
+                docker rm myapp-green || true
+                echo "Rolled back to blue deployment"
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Cleaning up containers..."
+            sh '''
+            docker stop myapp-blue || true
+            docker rm myapp-blue || true
+            docker stop myapp-green || true
+            docker rm myapp-green || true
+            '''
+        }
+    }
+}
